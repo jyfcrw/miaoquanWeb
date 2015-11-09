@@ -1,0 +1,128 @@
+﻿@using System.Collections.Generic
+@using SpermAnalyzerApp.Models
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+
+@{
+    Layout = "layout.cshtml";
+
+    List<User> users = (List<User>)@Model.Users;
+}
+
+@section Header
+{
+}
+
+<div class="container container-top mq-users-index">
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-3 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-list-alt"></span> 用户管理</h3>
+                    </div>
+                                        
+                </div>
+            </div>
+        </div>
+        <div class="panel-body  custom-info-panel">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12" id="alert_container">
+                    </div>
+                </div>
+         
+                <div class="row">
+                    <div class="col-lg-12">
+
+                        <a href="/users/new" class="btn btn-success pull-right" style="margin: 3px 3px;"><span class="glyphicon glyphicon-plus"></span> 添加用户</a>
+                       
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <span class="glyphicon glyphicon-edit"></span> 面板
+                               
+                            </div>
+                            <table id="users_list" class="table table-hover">
+                                <tr>
+                                    <th>编号</th>
+                                    <th>用户名</th>
+                                    <th>称呼</th>
+                                    <th>最后登入时间</th>
+                                    <th></th>
+                                </tr>
+                                @foreach (User _user in users)
+                                {
+                                <tr class="user-item">
+                                    <td>@_user.Id</td>
+                                    <td>@_user.Username
+                                        @if(_user.IsSuper) 
+                                        {
+                                            @:&lt;超级管理员&gt;
+                                        }
+                                    </td>
+                                    <td>
+                                        @(String.IsNullOrEmpty(_user.Cname) ? "医生" : _user.Cname)
+                                    </td>
+                                    <td>@_user.LastLoginAt.ToString("yyyy年MM月dd日 hh:mm:ss")</td>
+                                    <td>
+                                        <a href="/users/@_user.Id/edit"><span class="glyphicon glyphicon-edit"></span></a> &nbsp;
+                                        <a href="/users/@_user.Id" data-method="delete" class="user-item-remove"><span class="glyphicon glyphicon-trash"></span></a>
+                                    </td>
+                                </tr>
+                                }
+                            </table>  
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+@section Footer
+{
+<script type="text/html" id="alert_template">
+    <div class="alert alert-dismissable" style="display:none;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <span data-content="content"></span>
+    </div>
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        var clear_alert = function () {
+            $("#alert_container").html("");
+        };
+
+        $("#users_list").on("click", ".user-item-remove[data-method='delete']", function(e){
+            var _url = $(this).attr("href");
+            var self = this;
+            clear_alert();
+            $.ajax({
+                url: _url,
+                type: 'delete',
+                dataType: "json"
+            }).done(function (data) {
+                if (data.succeed.Value) {
+                    //移除被删除的条目
+                    $(self).closest("tr.user-item").remove();
+                }
+                //显示操作提示
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: data.alert.Value,
+                }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+
+                if (data.logout.Value) {
+                    window.location = data.logout.Value;
+                }
+            }).fail(function () {
+                //显示操作提示
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: "无法删除检测记录，请稍候重试。",
+                }).children(".alert").addClass("alert-danger").slideDown(300).end();
+            });
+            return false;
+        }); 
+    });
+</script>
+}

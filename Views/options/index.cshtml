@@ -1,0 +1,238 @@
+﻿@using System.Collections.Generic
+@using SpermAnalyzerApp.Models
+@using SpermAnalyzerApp.Resources
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+
+@{
+    Layout = "layout.cshtml";
+}
+
+@section Header
+{
+}
+
+<div class="container container-top mq-options-index">
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-3 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-list"></span> 选项内容</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body  custom-info-panel">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12" id="alert_container">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <form id="optionForm" name="optionForm" class="form-horizontal">
+                    
+                        <div class="col-lg-6">
+                            <div class="panel panel-primary">
+                                <div class="panel-heading"><span class="glyphicon glyphicon-edit"></span> 面板</div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label for="FieldKey" class="col-lg-3 control-label">可选项</label>
+                                        <div class="col-lg-5">
+                                            <select id="optionFormFieldKey" name="FieldKey" class="form-control">
+                                                @foreach (string _field in Option.OptionKeys)
+                                                {
+                                                    <option value="@_field">@TextCN.Get(_field)</option>    
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <button id="showOptionList" type="button" class="btn btn-primary" >
+                                                <span class="glyphicon glyphicon-refresh"></span> 查看
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <hr />
+                                    <div class="form-group">
+                                        <label for="FieldValue" class="col-lg-3 control-label">值</label>
+                                        <div class="col-lg-5">
+                                            <input type="text" value="" class="form-control" id="optionFormFieldValue" name="FieldValue" required="true" placeholder="请输入选项的值">
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <button id="submitOptionsForm" type="submit"  class="btn btn-success">
+                                                <span class="glyphicon glyphicon-plus"></span> 添加
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="FieldWeight" class="col-lg-3 control-label">顺序</label>
+                                        <div class="col-lg-5">
+                                            <input type="text" value="" digits="true" min="0" max="10000" required class="form-control" id="optionFormFieldWeight" name="FieldWeight" placeholder="请输入选项顺序">
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </form> 
+
+                    <div class="col-lg-6">
+                        <div id="options_list" data-delete-url="/options/" class="col-lg-12">
+                            <div class="well text-center">点击 &nbsp;<a id="showOptionListLink" href="#">查看</a>&nbsp; 该项的选项值</div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+@section Footer
+{
+<div class="mask hidden"></div>
+<div class="loading text-center hidden">
+    <img src="~/Content/images/loading.gif" />
+    <div class="loading-info">保存新选项值中，请耐心等待 <a href="#" class="loading-stop">返回</a></div>
+</div>
+
+<script type="text/html" id="alert_template">
+    <div class="alert alert-dismissable" style="display:none;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <span data-content="content"></span>
+    </div>
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        var optionForm = $("#optionForm");
+
+        var clear_alert = function () {
+            $("#alert_container").html("");
+        };
+
+        var clear_form = function () {
+            $("[name='FieldValue']").val("");
+            $("[name='FieldWeight']").val("");
+        };
+
+        var toggle_loading = function () {
+            $(".loading").toggleClass("hidden");
+            $(".mask").toggleClass("hidden");
+        };
+
+        optionForm.validate({
+            errorElement: "p",
+            errorClass: "has-error",
+            errorPlacement: function (errorLabel, element) {
+                errorLabel.addClass("help-block").css("margin-bottom", "0px").css("white-space", "nowrap").css("font-size", "95%");
+                errorLabel.addClass("text-danger").appendTo(element.closest("[class^='col-']"));
+            },
+            highlight: function (element, errorClass, validClass) {
+                $(element).closest(".form-group").addClass(errorClass).removeClass(validClass);
+            },
+            unhighlight: function (element, errorClass, validClass) {
+                $(element).closest(".form-group").removeClass(errorClass).addClass(validClass);
+            },
+            invalidHandler: function (event, validator) {
+                clear_alert();
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: "提示：请正确填写选项值的内容，并再次尝试",
+                }).children(".alert").addClass("alert-warning").slideDown(300).end();
+            }
+        });
+
+        optionForm.ajaxForm({
+            type: "POST",
+            dataType: "json",
+            beforeSubmit: function (formData, jqForm, options) {
+                if (!optionForm.valid()) {
+                    return false;
+                }
+                toggle_loading();
+            },
+            success: function (data, status, xhr) {
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: data.alert.Value,
+                }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+            },
+            error: function (xhr, status, error) {
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: "添加新选项值失败，失败原因[" + error + "]",
+                }).children(".alert").addClass("alert-danger").slideDown(300).end();
+            },
+            complete: function () {
+                toggle_loading();
+                $("#showOptionList").click();
+            }
+        });
+
+        $("#showOptionList").click(function () {
+            clear_form();
+            $.ajax({
+                url: "/options/list?field=" + $("#optionFormFieldKey").val(),
+                type: 'get',
+                dataType: "html"
+            }).done(function (data) {
+                if (data) {
+                    $("#options_list").html(data);
+                }
+            }).fail(function () {
+                //显示选项列表错误
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: "无法显示该选项的所有选项值，请重试。",
+                }).children(".alert").addClass("alert-danger").slideDown(300).end();
+            }).always(function () {
+            });
+        });
+
+        $("#showOptionListLink").click(function () {
+            $("#showOptionList").click();
+            return false;
+        });
+
+        $("#options_list").on("click", ".option-item-order", function (e) {
+            var _url = $(this).attr("href");
+            $.ajax({
+                url: _url,
+                type: 'put',
+                dataType: "json"
+            }).always(function () {
+                $("#showOptionList").click();
+            });
+            return false;
+        });
+
+        $("#options_list").on("click", ".option-item-remove[data-method='delete']", function (e) {
+            var _url = $(this).attr("href");
+            var self = this;
+            clear_alert();
+            $.ajax({
+                url: _url,
+                type: 'delete',
+                dataType: "json"
+            }).done(function (data) {
+                if (data.succeed.Value) {
+                    //移除被删除的条目
+                    $("#showOptionList").click();
+                }
+                //显示操作提示
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: data.alert.Value,
+                }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+            }).fail(function () {
+                //显示操作提示
+                $("#alert_container").loadTemplate($("#alert_template"), {
+                    content: "无法删除选项值，请稍候重试。",
+                }).children(".alert").addClass("alert-danger").slideDown(300).end();
+            });
+            return false;
+        });
+
+    });
+</script>
+}

@@ -1,0 +1,158 @@
+﻿@using SpermAnalyzerApp.Models
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    Layout = "layout.cshtml";
+    
+    Case _case = (Case)@Model.Case;
+    Case prev_case = @_case.Prev();
+    Case next_case = @_case.Next();
+    int sum = Case.Sum();
+    int pos = _case.Position();
+}
+
+@section Header
+{
+}
+
+
+<div class="container container-top"> 
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-9 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-list-alt"></span> 检查记录</h3>
+                    </div>
+
+                    <div class="col-md-9 col-sm-12 toolbox">
+
+                        <div class="btn-group">
+                            @if(prev_case != null)
+                            {
+                                <a href="/cases/@prev_case.Id/edit" class="btn btn-default"><span class="glyphicon glyphicon-chevron-left"></span></a>
+                            } else {
+                                <button type="button" disabled class="btn btn-default"><span class="glyphicon glyphicon-chevron-left"></span></button>
+                            }
+
+                            @if(next_case != null)
+                            {
+                                <a href="/cases/@next_case.Id/edit" class="btn btn-default"><span class="glyphicon glyphicon-chevron-right"></span></a>
+                            } else {
+                                <button type="button" disabled class="btn btn-default"><span class="glyphicon glyphicon-chevron-right"></span></button>
+                            }
+                            <a href="/cases/@_case.Id/edit" class="btn btn-default"><span class="glyphicon glyphicon-refresh"></span></a>
+                            <a href="/cases/@_case.Id" class="btn btn-default"><span class="glyphicon glyphicon-print"></span></a>
+                         </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-link">@pos/@sum</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-body  custom-info-panel">
+            <div class="container">
+                 <div class="row">
+                      <div class="col-md-12">
+                            <form id="caseForm" name="caseForm" class="form-horizontal" action="/cases/@_case.Id" method="PUT">
+                                <div class="row" id="alert_container"></div>
+
+                                @Html.Partial("_form", @Model)
+
+                                <div class="row">
+                                    <div class="col-md-12 text-center">
+                                        <input id="submitRecordForm" type="submit" value="保存" class="btn btn-primary btn-lg" />
+                                        <a href="/cases" class="btn btn-default btn-lg" role="button">返回记录库</a>
+                                    </div>
+                                </div>
+                            </form>
+                       </div>
+                  </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+@section Footer
+{
+<div class="mask hidden"></div>
+<div class="loading text-center hidden">
+    <img src="~/Content/images/loading.gif" />
+    <div class="loading-info">保存中，请耐心等待 <a href="#" class="loading-stop">返回</a></div>
+</div>
+
+<script type="text/html" id="alert_template">
+    <div class="alert alert-dismissable" style="display:none;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <div data-content="content"></div>
+    </div>
+</script>
+
+<script type="text/javascript">
+$(function () {
+    var caseForm = $("#caseForm");
+    var toggle_loading = function () {
+        $(".loading").toggleClass("hidden");
+        $(".mask").toggleClass("hidden");
+    };
+
+    var clear_alert = function () {
+        $("#alert_container").html("");
+    };
+
+    caseForm.validate({
+        errorElement: "p",
+        errorClass: "has-error",
+        errorPlacement: function (errorLabel, element) {
+            errorLabel.addClass("help-block").css("margin-bottom", "0px").css("white-space", "nowrap").css("font-size", "95%");
+            errorLabel.addClass("text-danger").appendTo(element.closest("[class^='col-']"));
+        },
+        highlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").addClass(errorClass).removeClass(validClass);
+        },
+        unhighlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").removeClass(errorClass).addClass(validClass);
+        },
+        invalidHandler: function (event, validator) {
+            clear_alert();
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "提示：请正确填写检测记录的内容，确保无误后再试",
+            }).children(".alert").addClass("alert-warning").slideDown(300).end();
+        }
+    });
+
+    caseForm.ajaxForm({
+        type: "PUT",
+        dataType: "json",
+        beforeSubmit: function (formData, jqForm, options) {
+            if (!caseForm.valid()) {
+                return false;
+            }
+            toggle_loading();
+        },
+        success: function (data, status, xhr) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: data.alert.Value,
+            }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+        },
+        error: function (xhr, status, error) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "保存失败，失败原因[" + error + "]",
+            }).children(".alert").addClass("alert-danger").slideDown(300).end();
+        },
+        complete: function () {
+            toggle_loading();
+            window.scrollTo(0, 0);
+        }
+    });
+
+    $('.loading-stop').click(function () {
+        toggle_loading();
+        return false;
+    });
+
+});
+</script>
+}

@@ -1,0 +1,84 @@
+﻿@using SpermAnalyzerApp.Models
+@using System.Collections.Generic
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+
+@{
+    List<Case> cases = (List<Case>)@Model.Cases;
+    long caseSum = (long)@Model.CaseSum;
+    long pageTotal = (long)@Model.PageTotal;
+    string query = @Model.Query ? (string)@Model.Query : null;
+}
+
+@if (query != null && caseSum > 0)
+{
+<div class="well well-sm">
+    搜索到 @caseSum 条记录，以下是搜索“@query”的搜索结果. <a href="/cases" style="font-size: .8em">取消搜索</a>
+</div>
+}
+
+@if (query != null && caseSum == 0)
+{
+<div class="well well-sm">
+    没有搜索到匹配“@query”的任何记录. <a href="/cases" style="font-size: .8em">取消搜索</a>
+</div>
+}
+
+<div class="case-items" data-total="@pageTotal">
+    <ul class="list-group">
+    @foreach (Case _case in cases)
+    {
+        <li class="list-group-item case-item @( _case.IsNew() ? "case-new-flag" : "")">
+                <div class="row">
+                    
+                     <div class="col-md-2 col-sm-3">
+                        <span class="badge case-item-fieldkey">ID</span> @_case.ReportID
+                    </div>
+                     <div class="col-md-4 col-sm-9 text-center">
+                        
+                        @if (!string.IsNullOrEmpty(@_case.PatientName) &&
+                            !string.IsNullOrEmpty(@_case.PatientSex) &&
+                            (@_case.PatientAge != null && @_case.PatientAge > 0)
+                            ){
+                            <div class="case-item-field case-item-field-long">
+                                <span class="badge case-item-fieldkey">姓名</span>
+                                @_case.PatientName 
+                            </div>
+                            <div class="case-item-field">
+                                <span class="badge case-item-fieldkey">性别</span>
+                                @_case.PatientSex
+                            </div>
+                            <div class="case-item-field case-item-field-last">
+                                <span class="badge case-item-fieldkey">年龄</span>
+                                @_case.PatientAge
+                            </div>
+
+                        }
+                        else
+                        {
+                            <a href="/cases/@_case.Id/edit">
+                                点击编辑必要信息
+                            </a>
+                        }
+                    </div>
+                <div class="col-md-3 col-md-offset-1 text-center">
+                    <span class="glyphicon glyphicon-time"></span> 
+                    @_case.ReportDate.ToString("yyyy/MM/dd hh:mm:ss")
+                </div>
+                <div class="col-md-2  text-center">
+                    <a class="case-item-edit case-item-icon" href="/cases/@_case.Id/edit">
+                        <span class="glyphicon glyphicon-edit"></span>
+                    </a>
+                    <a class="case-item-print case-item-icon" href="/cases/@_case.Id">
+                        <span class="glyphicon glyphicon-print"></span>
+                    </a>                        
+                    <a class="case-item-remove case-item-icon" href="/cases/@_case.Id" data-method="delete">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </a>
+                </div>
+            </div>
+            
+        </li>  
+    }
+    </ul>
+</div>

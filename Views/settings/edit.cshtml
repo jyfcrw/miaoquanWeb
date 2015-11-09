@@ -1,0 +1,139 @@
+﻿@using SpermAnalyzerApp.Models
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    Layout = "layout.cshtml";
+
+    Setting _setting = (Setting)@Model.SettingObj;
+}
+
+@section Header
+{
+}
+
+<div class="container container-top"> 
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-9 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-cog"></span> 系统设置</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-body  custom-info-panel">
+            <div class="container">
+                 <div class="row">
+                      <div class="col-md-12">
+                            <form id="settingForm" name="settingForm" class="form-horizontal" action="/settings" method="PUT">
+                                <div class="row" id="alert_container"></div>
+                                <div class="alert alert-info" style="line-height:20px;">
+                                    <p>* 注意：所有设置都与系统核心功能相关，请勿轻易修改。</p>
+                                    <p>* 数据绝对路径，是检测设备生成的后缀为“DBS”的文件的绝对路径，设置不正确系统将无法抓取到病例记录。</p>
+                                </div>
+                                <hr />
+                                <div class="form-group">
+                                    <label for="DataPath" class="col-lg-3 control-label">数据(.DBS)绝对路径</label>
+                                    <div class="col-lg-5">
+                                        <input type="text" required value="@_setting.DataPath" class="form-control" id="settingFormDataPath" name="DataPath">
+                                    </div>
+                                </div>
+
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-12 text-center">
+                                        <input id="submitSettingForm" type="submit" value="保存设置" class="btn btn-primary btn-lg" />
+                                        <a id="settingSaveToExl" target="_blank" href="/settings/export" class="btn btn-success btn-lg">导出所有记录</a>
+                                    </div>
+                                </div>
+                            </form>
+                       </div>
+                  </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+@section Footer
+{
+<div class="mask hidden"></div>
+<div class="loading text-center hidden">
+    <img src="~/Content/images/loading.gif" />
+    <div class="loading-info">保存中，请耐心等待 <a href="#" class="loading-stop">返回</a></div>
+</div>
+
+<script type="text/html" id="alert_template">
+    <div class="alert alert-dismissable" style="display:none;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <div data-content="content"></div>
+    </div>
+</script>
+
+<script type="text/javascript">
+$(function () {
+    $('#settingFormDataCollectEnable').bootstrapSwitch();
+    var settingForm = $("#settingForm");
+    var toggle_loading = function () {
+        $(".loading").toggleClass("hidden");
+        $(".mask").toggleClass("hidden");
+    };
+
+    var clear_alert = function () {
+        $("#alert_container").html("");
+    };
+
+    settingForm.validate({
+        errorElement: "p",
+        errorClass: "has-error",
+        errorPlacement: function (errorLabel, element) {
+            errorLabel.addClass("help-block").css("margin-bottom", "0px").css("white-space", "nowrap").css("font-size", "95%");
+            errorLabel.addClass("text-danger").appendTo(element.closest("[class^='col-']"));
+        },
+        highlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").addClass(errorClass).removeClass(validClass);
+        },
+        unhighlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").removeClass(errorClass).addClass(validClass);
+        },
+        invalidHandler: function (event, validator) {
+            clear_alert();
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "提示：请正确填写系统设置的内容后再试",
+            }).children(".alert").addClass("alert-warning").slideDown(300).end();
+        }
+    });
+
+    settingForm.ajaxForm({
+        type: "PUT",
+        dataType: "json",
+        beforeSubmit: function (formData, jqForm, options) {
+            if (!settingForm.valid()) {
+                return false;
+            }
+            toggle_loading();
+        },
+        success: function (data, status, xhr) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: data.alert.Value,
+            }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+        },
+        error: function (xhr, status, error) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "系统设置保存失败，失败原因[" + error + "]",
+            }).children(".alert").addClass("alert-danger").slideDown(300).end();
+        },
+        complete: function () {
+            toggle_loading();
+            window.scrollTo(0, 0);
+        }
+    });
+
+    $('.loading-stop').click(function () {
+        toggle_loading();
+        return false;
+    });
+});
+</script>
+}

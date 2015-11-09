@@ -1,0 +1,97 @@
+﻿@using Nancy.Security
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    SpermAnalyzerApp.Models.UserIdentity currentUser = (SpermAnalyzerApp.Models.UserIdentity)RenderContext.Context.CurrentUser;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>妙泉信息系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link rel="stylesheet" href='@Url.Content("~/Content/bootstrap/bootstrap.min.css")' type="text/css" />
+    <!-- <link href="Content/bootstrap/bootstrap-theme.min.css" rel="stylesheet" /> -->
+    <link rel="stylesheet" href='@Url.Content("~/Content/css/layout.css")' type="text/css" />
+    <!--[if IE]>
+        <link rel="stylesheet" href='@Url.Content("~/Content/css/ie.css")' type="text/css" media="screen, projection" />
+    <![endif]-->
+
+    <script src='@Url.Content("~/Content/js/jquery-2.1.0.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/jquery.form.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/jquery.validate.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/jquery.loadTemplate-1.4.0.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/bootstrap.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/bootstrap-combobox.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/bootstrap-switch.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/jquery.bootpag.min.js")' type="text/javascript"></script>
+    <script src='@Url.Content("~/Content/js/app.js")' type="text/javascript"></script>
+    @RenderSection("Header")
+</head>
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top dash-nav-theme" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">折叠菜单</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="/" class="navbar-brand">妙泉医疗信息系统 <span class="label label-info state">Pro</span></a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+
+            <ul class="nav navbar-nav">
+                <li><a href="/cases">检测记录库</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right tools">
+                <li class="username">
+                    <p class="navbar-text"><span class="glyphicon glyphicon-user"></span> @(String.IsNullOrEmpty(currentUser.CName) ? "医生" : currentUser.CName)</p>
+                </li>
+
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-th-large"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/users/profile"><span class="glyphicon glyphicon-pencil"></span> 个人信息</a></li>
+
+                        @if (currentUser.HasAnyClaim(new[] { "Admin" }))
+                        {
+                        <li><a href="/users"><span class="glyphicon glyphicon-list-alt"></span> 用户管理</a></li>
+                        <li><a href="/options"><span class="glyphicon glyphicon-list"></span> 选项内容</a></li>
+                        <li><a href="/settings"><span class="glyphicon glyphicon-cog"></span> 系统设置</a></li>
+                        }
+                        <li role="presentation" class="divider"></li>
+                        <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- render body -->
+    @RenderBody()
+
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="col-md-6"></div>
+                        <div class="col-md-6">
+                            <p class="brand">©2013 妙泉医药公司版权所有.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    @RenderSection("Footer")
+</body>
+</html>

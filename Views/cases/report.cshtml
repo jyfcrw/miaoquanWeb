@@ -1,0 +1,90 @@
+﻿@using SpermAnalyzerApp.Models
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    Layout = "layout.cshtml";
+    
+    int? caseId = @Model.id ? (int?)@Model.id : null;
+    string paramsString = "?caseId=" + caseId;
+}
+
+@section Header
+{
+}
+
+<div class="container container-top"> 
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-9 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-file"></span> 诊断详情表</h3>
+                    </div>
+
+                    <div class="col-md-9 col-sm-12 toolbox">
+                        <div class="btn-group">
+                            <button id="refreshReport" class="btn btn-default">刷新</button>
+                            <button id="printReport" class="btn btn-default">打印</button>
+                        </div>
+                        <div class="btn-group">
+                            <a href="/cases/@caseId/edit" class="btn btn-primary">更改内容</a>
+                        </div>
+                        <div class="btn-group">
+                            <a href="/cases" class="btn btn-default">返回记录库</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-body custom-info-panel no-padding">
+            <div data-params="@paramsString" class="report-container container no-padding" style="height:800px">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Footer
+{
+<script type="text/javascript">
+    $(function () {
+        var paramsString = $(".report-container").attr("data-params");
+        var reportUrl = "/Reports/ReportRender.aspx" + (paramsString ? paramsString : "");
+        var reportId = 'reportFrame';
+        var iframe = document.createElement("iframe");
+        iframe.id = reportId;
+
+        if (iframe.attachEvent){
+            iframe.attachEvent("onload", function(){
+                $(iframe).fadeIn();
+            });
+        } else {
+            iframe.onload = function(){
+                $(iframe).fadeIn();
+            };
+        }
+
+        $(iframe).attr("src", reportUrl)
+            .css({ "width": "100%", "height": "800px", "display": "none" });
+        $(".report-container").append(iframe);
+
+        //刷新按钮
+        $("#refreshReport").click(function () {
+            $(iframe).hide();
+            $(iframe).attr("src", reportUrl);
+        });
+
+        //打印按钮
+        $("#printReport").click(function () {
+            printReport(reportId);
+        });
+    });
+
+    function printReport(iframId) {
+        document.getElementById(iframId).focus();
+        document.getElementById(iframId).contentWindow.focus();
+        document.getElementById(iframId).contentWindow.print();
+    }
+
+</script>
+}

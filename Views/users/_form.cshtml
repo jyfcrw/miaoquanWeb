@@ -1,0 +1,54 @@
+﻿@using SpermAnalyzerApp.Models
+@using System.Collections.Generic
+@using Nancy.Security
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    User _user = (User)Model.User;
+    UserIdentity currentUser = (UserIdentity)Model.CurrentUser;
+
+    bool isSuper = currentUser.HasAnyClaim(new[] { "Admin" });
+}
+
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="Username" class="col-lg-3 control-label">用户名</label>
+            <div class="col-lg-5">
+                <input type="text" minlength="4"  required  maxlength="20" @(_user.Id > 0 ? "disabled" : "") value="@_user.Username" class="form-control" id="userFormUsername" name="Username" placeholder="请输入新用户名">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="Password" class="col-lg-3 control-label">密码</label>
+            <div class="col-lg-5">
+                <input type="password" minlength="6" required value="@_user.Password" class="form-control" id="userFormPassword" name="Password" placeholder="请输入新用户密码">
+            </div>
+        </div>
+                
+        <div class="form-group">
+            <label for="RepeatPassword" class="col-lg-3 control-label">重复密码</label>
+            <div class="col-lg-5">
+                <input type="password" required="true" equalTo="#userFormPassword" value="@_user.Password" class="form-control" id="recordFormPatientAge" name="PatientAge" placeholder="请再次输入密码">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="Cname" class="col-lg-3 control-label">称呼</label>
+            <div class="col-lg-5">
+                <input type="text" maxlength="20"  value="@_user.Cname" class="form-control" id="userFormCname" name="Cname" placeholder="请输入用户称呼">
+            </div>
+        </div>
+
+        @if (_user.Id <= 0 || isSuper)
+        {
+        <div class="form-group">
+            <label for="IsSuper" class="col-lg-3 control-label"></label>
+            <div class="col-lg-5">
+                <input type="checkbox" id="userFormIsSuper" @(_user.IsSuper ? "checked" : "") name="IsSuper" /> 超级管理员
+            </div>
+        </div>
+        }
+    </div>
+</div>    

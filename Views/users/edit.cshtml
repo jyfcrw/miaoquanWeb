@@ -1,0 +1,174 @@
+﻿@using SpermAnalyzerApp.Models
+@using Nancy.Security
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+@{
+    Layout = "layout.cshtml";
+    
+    User _user = (User)@Model.User;
+    bool isProfileRoute = (bool)Model.IsProfileRoute;
+}
+
+@section Header
+{
+}
+
+
+<div class="container container-top"> 
+    <div class="panel panel-default custom-info-panel">
+        <div class="panel-heading record-title">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-9 titlebox">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-list-alt"></span> 编辑用户</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-body  custom-info-panel">
+            <div class="container">
+                 <div class="row">
+                      <div class="col-md-12">
+                            <form id="userForm" name="userForm" class="form-horizontal" action="/users/@_user.Id" method="PUT">
+                                <div class="row" id="alert_container"></div>
+
+                                @Html.Partial("_form", @Model)
+                                <hr />
+                                <div class="alert alert-warning" style="line-height:20px;">
+                                    <p>* 注意：删除当前用户将无法再使用该用户登录，并会立即主动注销。</p>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-5">
+                                        <button class="btn btn-danger" data-delete-url="/users/@_user.Id" id="deleteCurrentUser" type="button">
+                                            永久删除当前用户
+                                        </button>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-12 text-center">
+                                        <input id="submitUserForm" type="submit" value="保存用户" class="btn btn-primary btn-lg" />
+                                        @if (!isProfileRoute)
+                                        {
+                                        <a href="/users" class="btn btn-default btn-lg" role="button">返回</a>
+                                        }
+                                    </div>
+                                </div>
+                            </form>
+                       </div>
+                  </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+@section Footer
+{
+<div class="mask hidden"></div>
+<div class="loading text-center hidden">
+    <img src="~/Content/images/loading.gif" />
+    <div class="loading-info">保存用户中，请耐心等待 <a href="#" class="loading-stop">返回</a></div>
+</div>
+
+<script type="text/html" id="alert_template">
+    <div class="alert alert-dismissable" style="display:none;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <div data-content="content"></div>
+    </div>
+</script>
+
+<script type="text/javascript">
+$(function () {
+    var userForm = $("#userForm");
+    var toggle_loading = function () {
+        $(".loading").toggleClass("hidden");
+        $(".mask").toggleClass("hidden");
+    };
+
+    var clear_alert = function () {
+        $("#alert_container").html("");
+    };
+
+    userForm.validate({
+        errorElement: "p",
+        errorClass: "has-error",
+        errorPlacement: function (errorLabel, element) {
+            errorLabel.addClass("help-block").css("margin-bottom", "0px").css("white-space", "nowrap").css("font-size", "95%");
+            errorLabel.addClass("text-danger").appendTo(element.closest("[class^='col-']"));
+        },
+        highlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").addClass(errorClass).removeClass(validClass);
+        },
+        unhighlight: function( element, errorClass, validClass ) {
+            $(element).closest(".form-group").removeClass(errorClass).addClass(validClass);
+        },
+        invalidHandler: function (event, validator) {
+            clear_alert();
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "提示：请正确填写用户信息后再试",
+            }).children(".alert").addClass("alert-warning").slideDown(300).end();
+        }
+    });
+
+    userForm.ajaxForm({
+        type: "PUT",
+        dataType: "json",
+        beforeSubmit: function (formData, jqForm, options) {
+            if (!userForm.valid()) {
+                return false;
+            }
+            toggle_loading();
+        },
+        success: function (data, status, xhr) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: data.alert.Value,
+            }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+        },
+        error: function (xhr, status, error) {
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "保存用户失败，失败原因[" + error + "]",
+            }).children(".alert").addClass("alert-danger").slideDown(300).end();
+        },
+        complete: function () {
+            toggle_loading();
+        }
+    });
+
+    $("#deleteCurrentUser").on("click", function (e) {
+        if (!confirm('确定要删去当前用户，并注销吗？')) { return false; }
+        var _url = $(this).attr("data-delete-url");
+        var self = this;
+        clear_alert();
+        $.ajax({
+            url: _url,
+            type: 'delete',
+            dataType: "json"
+        }).done(function (data) {
+            if (data.succeed.Value) {
+                window.location.reload();
+            }
+            //显示操作提示
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: data.alert.Value,
+            }).children(".alert").addClass((data.succeed.Value) ? "alert-success" : "alert-danger").slideDown(300).end();
+
+            if (data.logout.Value) {
+                window.location = data.logout.Value;
+            }
+        }).fail(function () {
+            //显示操作提示
+            $("#alert_container").loadTemplate($("#alert_template"), {
+                content: "无法删除当前用户，请稍候重试。",
+            }).children(".alert").addClass("alert-danger").slideDown(300).end();
+        });
+        return false;
+    });
+
+    $('.loading-stop').click(function () {
+        toggle_loading();
+        return false;
+    });
+});
+</script>
+}

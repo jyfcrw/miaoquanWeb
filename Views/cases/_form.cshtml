@@ -1,0 +1,230 @@
+﻿@using SpermAnalyzerApp.Models
+@using SpermAnalyzerApp.Resources
+@using System.Collections.Generic
+@using System.Reflection;
+
+@inherits Nancy.ViewEngines.Razor.NancyRazorViewBase<dynamic>
+
+@{
+    Case _case = (Case)Model.Case;
+    string paramsString = "?caseId=" + _case.Id + "&action=diagnostic";
+}
+
+@helper buildOptions(string key, string val)
+{
+    foreach (Option _op in Option.GetOptions(key))
+    {
+        @:<option @((_op.FieldValue == val) ? "selected" : "") value="@_op.FieldValue">@_op.FieldValue</option>
+    }
+}
+
+@helper buildValidations(Type type)
+{
+    if(type == typeof(int) || type == typeof(int?))
+    {
+        @:digits='true'
+    } else if(type == typeof(double) || type == typeof(double?))
+    {
+        @:number='true'
+    }
+    
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-primary">
+
+            <div class="panel-heading">患者信息</div>
+            <div class="panel-body">
+
+                <div class="form-group">
+                    <label for="ReportID" class="col-lg-3 control-label">记录号</label>
+                    <div class="col-lg-5">
+                        <input type="text" required  disabled="disabled" maxlength="20" value="@_case.ReportID" class="form-control" id="recordFormReportID" name="ReportID">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientID" class="col-lg-3 control-label">患者序号</label>
+                    <div class="col-lg-5">
+                        <input type="text" required  maxlength="20" value="@_case.PatientID" class="form-control" id="recordFormPatientID" name="PatientID" placeholder="请输入患者序号">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientName" class="col-lg-3 control-label">患者姓名</label>
+                    <div class="col-lg-5">
+                        <input type="text" required minlength="2" maxlength="4" value="@_case.PatientName" class="form-control" id="recordFormPatientName" name="PatientName" placeholder="请输入患者姓名">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="PatientAge" class="col-lg-3 control-label">年龄</label>
+                    <div class="col-lg-5">
+                        <input type="text" min="10" max="120" digits="true" value="@_case.PatientAge" class="form-control" id="recordFormPatientAge" name="PatientAge" placeholder="请输入患者年龄">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="PatientSex" class="col-lg-3 control-label">性别</label>
+                    <div class="col-lg-4">
+                        <select id="recordFormSex" name="PatientSex" class="form-control combobox">
+                            @buildOptions("Sex", _case.PatientSex)
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading">医院信息</div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label for="hospitalName" class="col-lg-3 control-label">医院名称</label>
+                    <div class="col-lg-7">
+                        <select id="recordFormHospitalName" name="HospitalName" class="form-control combobox" required>
+                            @buildOptions("HospitalName", _case.HospitalName)
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mainDoctor" class="col-lg-3 control-label">主治医生</label>
+                    <div class="col-lg-5">
+                        <select id="recordFormDoctor" name="Doctor" class="form-control combobox">
+                            @buildOptions("Doctor", _case.Doctor)
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="detectDoctor" class="col-lg-3 control-label">检测医生</label>
+                    <div class="col-lg-5">
+                        <select id="recordFormDetectionDoctor" name="DetectionDoctor" class="form-control combobox">
+                            @buildOptions("Doctor", _case.DetectionDoctor)
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="checkDoctor" class="col-lg-3 control-label">审核医生</label>
+                    <div class="col-lg-5">
+                        <select id="recordFormCheckDoctor" name="CheckDoctor" class="form-control combobox">
+                            @buildOptions("Doctor", _case.CheckDoctor)
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary">
+            <div class="panel-heading">诊断信息</div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-12 col-lg-12">
+                        @{
+                            PropertyInfo[] properties = typeof(Case).GetProperties();
+                            foreach (PropertyInfo propertie in properties)
+                            {
+                                Usage[] usageList = (Usage[])(propertie.GetCustomAttributes(typeof(Usage), false));
+                                Usage usage = (usageList != null && usageList.Length > 0) ? usageList[0] : null;
+                                if (usage == null || (usage != null && !usage.DynamicVisible)) { continue; }
+                                string name = propertie.Name;
+                                string elementId = "recordForm" + name;
+                                var validation = buildValidations(propertie.PropertyType);
+                                    
+                                <div class="form-group col-md-6 col-lg-6">
+                                    <label for="@propertie.Name" class="col-lg-3 control-label">@TextCN.Get(name)</label>
+                                    <div class="col-lg-8">
+                                        @if (usage != null && usage.OptionKey != null)
+                                        {
+                                            var result = buildOptions(usage.OptionKey, propertie.GetValue(_case, null) + "");
+                                            <select id="@elementId" name="@name" class="form-control combobox">
+                                                @result
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <input type="text"
+                                                @validation
+                                                value="@propertie.GetValue(_case, null)"
+                                                class="form-control"
+                                                id="@elementId"
+                                                name="@name" />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary diagnostic-data">
+            <div class="panel-heading">检测数据</div>
+            <div class="panel-body">
+                
+@*                    @foreach (KeyValuePair<string, object> _data in _case.DiagnosticData)
+                    { 
+                        <div class="form-group col-md-4">
+                            <label class="col-md-6 control-label">@TextCN.Get(_data.Key.ToString())</label>
+                            <div class="col-md-6">
+                                <p class="form-control-static">@_data.Value.ToString()</p>
+                            </div>
+                        </div>
+                    }*@
+                <div class="container no-padding">
+                    <iframe id="reportFrame" data-params="@paramsString" style="display: none;">
+                    </iframe>
+                </div>
+                
+            </div>
+
+            <div class="panel-footer">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="detectDate" class="col-lg-3 control-label">送检日期</label>
+                            <div class="col-lg-8">
+                                <input type="text" date="true" value="@_case.CreateAt.ToString("yyyy/MM/dd hh:mm:ss")" disabled class="form-control" id="recordFormCreateAt" name="CreateAt">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="reportDate" class="col-lg-3 control-label">报告日期</label>
+                            <div class="col-lg-8">
+                                <input type="text" date="true" value="@((_case.ReportDate == null ? _case.ReportDate : DateTime.Now).ToString("yyyy/MM/dd hh:mm:ss"))" class="form-control" id="recordFormReportDate" name="ReportDate">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.combobox').combobox();
+    });
+
+    var paramsString = $("#reportFrame").attr("data-params");
+    var reportUrl = "/Reports/ReportRender.aspx" + (paramsString ? paramsString : "");
+    $("#reportFrame").attr("src", reportUrl)
+        .css({ "width": "100%", "height": "400px" })
+        .show();
+
+</script>
